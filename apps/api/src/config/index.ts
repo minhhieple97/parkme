@@ -1,1 +1,1 @@
-export * from "./validate-schema.config";
+export * from './validate-schema.config';

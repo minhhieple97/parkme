@@ -1,21 +1,18 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
-import { PassportStrategy } from "@nestjs/passport";
-import { Strategy, ExtractJwt } from "passport-jwt";
-import { User } from "@prisma/client";
-import { PrismaService } from "src/prisma/prisma.service";
-import { ConfigService } from "@nestjs/config";
-import { AuthPayload } from "../types";
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { Strategy, ExtractJwt } from 'passport-jwt';
+import { User } from '@prisma/client';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
+import { AuthPayload } from '../types';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(
-    private prisma: PrismaService,
-    private configService: ConfigService
-  ) {
+  constructor(private prisma: PrismaService, private configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get("JWT_SECRET"),
+      secretOrKey: configService.get('JWT_SECRET'),
     });
   }
 
@@ -24,7 +21,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: { id: payload.sub },
     });
     if (!user) {
-      throw new BadRequestException("Invalid token");
+      throw new BadRequestException('Invalid token');
     }
     return user;
   }

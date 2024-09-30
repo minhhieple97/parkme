@@ -1,16 +1,11 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  UnauthorizedException,
-} from "@nestjs/common";
-import { Reflector } from "@nestjs/core";
-import { Role } from "@prisma/client";
-import { GqlExecutionContext } from "@nestjs/graphql";
-import { AuthGuard } from "@nestjs/passport";
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { Role } from '@prisma/client';
+import { GqlExecutionContext } from '@nestjs/graphql';
+import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
-export class RolesGuard extends AuthGuard("jwt") implements CanActivate {
+export class RolesGuard extends AuthGuard('jwt') implements CanActivate {
   constructor(private reflector: Reflector) {
     super();
   }
@@ -28,10 +23,7 @@ export class RolesGuard extends AuthGuard("jwt") implements CanActivate {
     }
 
     // If authenticated, check for required roles
-    const requiredRoles = this.reflector.get<Role[]>(
-      "roles",
-      context.getHandler()
-    );
+    const requiredRoles = this.reflector.get<Role[]>('roles', context.getHandler());
 
     if (!requiredRoles || requiredRoles.length === 0) {
       return true; // No specific roles required
@@ -41,7 +33,7 @@ export class RolesGuard extends AuthGuard("jwt") implements CanActivate {
     const user = ctx.getContext().req.user;
 
     if (!user) {
-      throw new UnauthorizedException("User not found");
+      throw new UnauthorizedException('User not found');
     }
 
     return requiredRoles.some((role) => user.role === role);
