@@ -1,7 +1,7 @@
-import { Injectable } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { S3Client, S3ClientConfig } from "@aws-sdk/client-s3";
-import { Upload } from "@aws-sdk/lib-storage";
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { S3Client, S3ClientConfig } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 
 @Injectable()
 export class AwsService {
@@ -13,23 +13,17 @@ export class AwsService {
 
   private getAwsConfig(): S3ClientConfig {
     return {
-      region: this.configService.get<string>("AWS_REGION"),
+      region: this.configService.get<string>('AWS_REGION'),
       credentials: {
-        accessKeyId: this.configService.get<string>("AWS_ACCESS_KEY_ID"),
-        secretAccessKey: this.configService.get<string>(
-          "AWS_SECRET_ACCESS_KEY"
-        ),
+        accessKeyId: this.configService.get<string>('AWS_ACCESS_KEY_ID'),
+        secretAccessKey: this.configService.get<string>('AWS_SECRET_ACCESS_KEY'),
       },
     };
   }
 
-  async uploadFile(
-    buffer: Buffer,
-    key: string,
-    contentType: string
-  ): Promise<string> {
+  async uploadFile(buffer: Buffer, key: string, contentType: string): Promise<string> {
     const uploadParams = {
-      Bucket: this.configService.get<string>("AWS_S3_BUCKET_NAME"),
+      Bucket: this.configService.get<string>('AWS_S3_BUCKET_NAME'),
       Key: key,
       Body: buffer,
       ContentType: contentType,
@@ -42,7 +36,7 @@ export class AwsService {
 
     const uploadResult = await upload.done();
     return `https://${uploadResult.Bucket}.s3.${this.configService.get<string>(
-      "AWS_REGION"
+      'AWS_REGION'
     )}.amazonaws.com/${uploadResult.Key}`;
   }
 }
