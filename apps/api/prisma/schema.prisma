@@ -130,7 +130,7 @@ model ParkingLot {
   id          String   @id @default(cuid())
   name        String
   address     String
-  coordinates String // Store as "latitude,longitude"
+  coordinates String
   managerId   String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
