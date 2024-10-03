@@ -1,32 +1,230 @@
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum Role {
   ADMIN
   MANAGER
+  VALET
   USER
+  DRIVER
+}
+
+enum AuthProvider {
+  LOCAL
+  GITHUB
+  GOOGLE
 }
 
 model User {
-  id                    String    @id @default(cuid())
-  username              String    @unique
-  fullName              String
-  email                 String    @unique
-  passwordHash          String
-  passwordSalt          String
-  passwordResetToken    String?
-  passwordResetExpires  DateTime?
-  role                  Role      @default(USER)
-  avatar                String?
-  googleId              String?   @unique
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  id                   String    @id @default(cuid())
+  username             String?   @unique
+  fullName             String
+  email                String    @unique
+  passwordHash         String?
+  passwordSalt         String?
+  passwordResetToken   String?
+  passwordResetExpires DateTime?
+  role                 Role      @default(USER)
+  avatar               String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  authentications UserAuthentication[]
+  booker          Booker?
+  driver          Driver?
 
   @@map("users")
+}
+
+model UserAuthentication {
+  id                 String       @id @default(cuid())
+  userId             String
+  authProvider       AuthProvider
+  authProviderUserId String?
+  authProviderToken  String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, authProvider])
+  @@unique([authProvider, authProviderUserId])
+  @@map("user_authentications")
+}
+
+model Booker {
+  id                     String   @id @default(cuid())
+  userId                 String   @unique
+  phoneNumber            String?
+  address                String?
+  preferredPaymentMethod String?
+  loyaltyPoints          Int      @default(0)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id])
+  vehicles        Vehicle[]
+  parkingSessions ParkingSession[]
+  payments        Payment[]
+
+  @@map("bookers")
+}
+
+model Driver {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  licenseNumber     String   @unique
+  licenseExpiryDate DateTime
+  vehicleType       String
+  isAvailable       Boolean  @default(true)
+  rating            Float?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id])
+  parkingSessions ParkingSession[]
+
+  @@map("drivers")
+}
+
+model VehicleType {
+  id                   String   @id @default(cuid())
+  name                 String   @unique
+  requiresLicensePlate Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  vehicles               Vehicle[]
+  parkingSpots           ParkingSpot[]
+  parkingLotVehicleTypes ParkingLotVehicleType[]
+  pricings               Pricing[]
+
+  @@map("vehicle_types")
+}
+
+model Vehicle {
+  id           String   @id @default(cuid())
+  bookerId     String
+  make         String?
+  model        String?
+  licensePlate String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  booker         Booker           @relation(fields: [bookerId], references: [id])
+  VehicleType    VehicleType?     @relation(fields: [vehicleTypeId], references: [id])
+  vehicleTypeId  String?
+  ParkingSession ParkingSession[]
+
+  @@unique([bookerId, licensePlate])
+  @@map("vehicles")
+}
+
+model ParkingLot {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  coordinates String // Store as "latitude,longitude"
+  managerId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parkingSpots           ParkingSpot[]
+  parkingLotVehicleTypes ParkingLotVehicleType[]
+  pricings               Pricing[]
+
+  @@map("parking_lots")
+}
+
+model ParkingLotVehicleType {
+  id        String   @id @default(cuid())
+  lotId     String
+  typeId    String
+  capacity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parkingLot  ParkingLot  @relation(fields: [lotId], references: [id])
+  vehicleType VehicleType @relation(fields: [typeId], references: [id])
+
+  @@unique([lotId, typeId])
+  @@map("parking_lot_vehicle_types")
+}
+
+model ParkingSpot {
+  id         String   @id @default(cuid())
+  lotId      String
+  typeId     String
+  spotNumber String
+  isOccupied Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  parkingLot      ParkingLot       @relation(fields: [lotId], references: [id])
+  vehicleType     VehicleType      @relation(fields: [typeId], references: [id])
+  parkingSessions ParkingSession[]
+
+  @@unique([lotId, typeId, spotNumber])
+  @@map("parking_spots")
+}
+
+model ParkingSession {
+  id              String    @id @default(cuid())
+  bookerId        String
+  vehicleId       String
+  spotId          String
+  driverId        String?
+  startTime       DateTime  @default(now())
+  endTime         DateTime?
+  pickupLocation  String?
+  dropoffLocation String?
+  status          String
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  booker      Booker      @relation(fields: [bookerId], references: [id])
+  vehicle     Vehicle     @relation(fields: [vehicleId], references: [id])
+  parkingSpot ParkingSpot @relation(fields: [spotId], references: [id])
+  driver      Driver?     @relation(fields: [driverId], references: [id])
+  payment     Payment?
+
+  @@map("parking_sessions")
+}
+
+model Pricing {
+  id         String   @id @default(cuid())
+  lotId      String
+  typeId     String
+  hourlyRate Float
+  dailyRate  Float
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  parkingLot  ParkingLot  @relation(fields: [lotId], references: [id])
+  vehicleType VehicleType @relation(fields: [typeId], references: [id])
+
+  @@unique([lotId, typeId])
+  @@map("pricing")
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  sessionId     String   @unique
+  bookerId      String
+  amount        Float
+  paymentMethod String
+  paymentStatus String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  parkingSession ParkingSession @relation(fields: [sessionId], references: [id])
+  booker         Booker         @relation(fields: [bookerId], references: [id])
+
+  @@map("payments")
 }
